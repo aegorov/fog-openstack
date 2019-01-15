@@ -52,18 +52,16 @@ module Fog
         begin
           response = @connection.request(
             params.merge(
-              :headers => headers(params.delete(:headers)),
+              :headers => headers(params[:headers]),
               :path    => "#{@path}/#{params[:path]}"
             )
           )
-        rescue Excon::Errors::Unauthorized => error
-          # token expiration and token renewal possible
-          if error.response.body != 'Bad username or password' && @openstack_can_reauthenticate && !retried
+        rescue Excon::Errors::Unauthorized, Excon::Error::Socket => error
+          if @openstack_can_reauthenticate && !retried
             @openstack_must_reauthenticate = true
             authenticate
             retried = true
             retry
-          # bad credentials or token renewal not possible
           else
             raise error
           end
